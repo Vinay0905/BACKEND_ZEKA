@@ -56,10 +56,15 @@ def extract_website_intelligence(html: str, url: str) -> ExtractedWebsiteData:
 
     for tag in soup(["script", "style", "meta", "link", "noscript"]):
         tag.decompose()
-
-    title = soup.title.string.strip() if soup.title and soup.title.string else "Untitled"
-    desc_tag = soup.find("meta", attrs={"name": "description"})
-    description = desc_tag["content"].strip() if desc_tag and desc_tag.get("content") else ""
+    try:
+        title = soup.title.string.strip() if soup.title and soup.title.string else "Untitled"
+    except:
+        title = "Untitled"
+    try:
+        desc_tag = soup.find("meta", attrs={"name": "description"})
+        description = desc_tag["content"].strip() if desc_tag and desc_tag.get("content") else ""
+    except Exception:
+        description = ""
 
     forms = []
     for form in soup.find_all("form")[:5]:
@@ -134,7 +139,7 @@ def generate_test_cases(extracted: ExtractedWebsiteData, coverage: str) -> List[
 
     system_prompt = (
     "You are a senior QA automation engineer with 15+ years of experience specializing in web application testing. "
-    "Your expertise includes functional testing, edge case detection, and creating test cases that can be executed by automated testing frameworks like Selenium and Playwright. "
+    "Your expertise includes functional testing, edge case detection, and creating test cases that can be executed by ai agents such as browser use agent. "
     "Given website data, generate comprehensive, executable test cases in valid JSON format only. "
     "Focus on real-world scenarios, security considerations, and user experience flows. "
     "Each test case must be specific, actionable, and map directly to automatable browser actions."

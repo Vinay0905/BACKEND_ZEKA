@@ -29,6 +29,17 @@ class ExtractedWebsiteData:
     text_summary: str
     dom_structure: str
 
+@dataclass
+class TestResult:
+    test_id: int
+    status: str  
+    screenshot: Optional[str]  
+    logs: List[str]
+    duration_ms: int
+    error_message: Optional[str]
+    page_source: Optional[str]  
+
+
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=2, max=10))
 def scrape_website(url: str) -> str:
     print("Launching Chrome browser...")
@@ -186,7 +197,7 @@ Requirements:
     "expected_result": "Expected outcome",
     "steps": ["Step 1", "Step 2"]
   }}
-]
+]   
 
 Return ONLY the JSON array, no explanation, no markdown.
 """

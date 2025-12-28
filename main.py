@@ -62,3 +62,5 @@ if st.button("Scrape & Generate Tests") and url:
     with open("tests.json", "r") as f:
         tests = json.load(f)
         st.write("Running tests...")
+    with open("tests.json", "w") as f:
+        json.dump(tests, f)

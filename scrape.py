@@ -225,7 +225,4 @@ Return ONLY the JSON array, no explanation, no markdown.
     end = text.rfind("]") + 1
     if start == -1 or end == 0:
         raise ValueError("Model did not return a JSON array")
-    #print(text)
-    #print(len(text))
-    tests = json.loads(text[start:end])
-    return tests
+    return json.loads(text[start:end])

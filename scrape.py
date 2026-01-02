@@ -14,7 +14,6 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from typing import Optional
 
 
-
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=OPENAI_API_KEY)
 MODEL_NAME = "gpt-4.1"  
@@ -226,3 +225,4 @@ Return ONLY the JSON array, no explanation, no markdown.
     if start == -1 or end == 0:
         raise ValueError("Model did not return a JSON array")
     return json.loads(text[start:end])
+

@@ -1,0 +1,1 @@
+Marcus-OS (Marcus Open Source) is an open-source playground for experiments, templates, and tooling around the Marcus ecosystem. It is intended as a central hub where ideas, prototypes, and shared utilities can live in one place.

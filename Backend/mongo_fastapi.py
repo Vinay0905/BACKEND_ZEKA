@@ -10,12 +10,7 @@ load_dotenv()
 
 uri=os.getenv("MONGO_URI")
 
-# username = quote_plus("admin")
-# password = quote_plus("Vinay@0905")
 
-# uri = f"mongodb+srv://{username}:{password}@zeka.7ijqrc1.mongodb.net/?appName=ZEKA"
-
-# uri=f"mongodb+srv://vinay:vinay0905@zeka.7ijqrc1.mongodb.net/?appName=ZEKA"
 
 app=fastapi.FastAPI()
 

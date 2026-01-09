@@ -24,3 +24,5 @@ Thumbs.db
 # Backend specific
 Backend/local_cache.json
 Backend/control/
+
+GIT_WORKFLOW.md

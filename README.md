@@ -8,18 +8,20 @@ Imagine this application as a restaurant kitchen:
 
 1.  **The Waiter (FastAPI)**: This is the web server. It takes orders (requests) from customers (users). It checks if the order makes sense (validation) and sends it to the kitchen.
 2.  **The Kitchen (MongoDB)**: This is the database. It stores all the "recipes" (data) and "prepared dishes" (saved items). We use a special freezer called **GridFS** to store big items like pictures.
-3.  **The Short-Term Memory (Cache)**: Often, customers ask for the same thing over and over. Instead of cooking it from scratch every time, we check our "short-term memory" (Cache). If it's there (a **HIT**), we serve it instantly. If not (a **MISS**), we have to cook it.
-    - _Note: We use a special "Mock Redis" system so you don't need to install any extra software for this to work!_
-4.  **The Background Chef (Celery)**: Sometimes, a dish takes a long time to cook (like "computing" a heavy value). The Waiter doesn't want to keep the customer waiting at the table. So, the Waiter gives the order to the Background Chef and tells the customer, "We started working on it, here is your ticket number (Task ID)." The Chef cooks it in the background, and when it's done, puts it in the Cache.
+3.  **The Smart Cache**: To keep everything lightning fast, we use a "Cache-Aside" pattern. When you ask for a test case by its ID, we first check our local memory (MockRedis). If it's there (**HIT**), you get it instantly. If not (**MISS**), we pull it from the database and save it in memory for the next person.
+
+    - _Synchronization_: When a new item is created or uploaded via PDF, it's instantly seeded into the cache. If a background worker updates the item (like adding a thumbnail), it automatically clears the old cache to ensure you never see stale data.
+
+4.  **The PDF Inspector**: You can now upload large PDF files filled with test cases. Our parser automatically scans the text, extracts the structured data, and even "guesses" if a test case is positive or negative based on the language used.
 
 ## 🚀 Features
 
 - **Web API (FastAPI)**: Fast and modern Python web framework.
+- **PDF Parser & Classifier**: Automatically extracts test cases from PDFs and classifies them as "positive" or "negative" using smart heuristics.
+- **Smart Caching (MockRedis)**: A custom system that acts like a professional Redis cache but saves to a local file (`local_cache.json`).
+- **Background Tasks (Celery)**: Handles image processing and thumbnail generation without slowing down the user.
+- **Image Storage (GridFS)**: Specialized storage for high-quality images and their thumbnails.
 - **Database (MongoDB)**: Stores flexible data (like our Test Cases).
-- **Image Storage (GridFS)**: specialized storage for image files.
-- **Background Tasks (Celery)**: Runs heavy jobs in the background so the website stays fast.
-- **No-Install Cache (MockRedis)**: A custom system that acts like a professional Redis cache but saves to a simple local file (`local_cache.json`).
-- **Test Case Schema**: Designed to store test steps, expected results, and types.
 
 ## 📂 Project Structure
 
@@ -28,84 +30,57 @@ Imagine this application as a restaurant kitchen:
 ├── app
 │   ├── Celery
 │   │   ├── Celery_worker.py  # Configures the Background Chef
-│   │   └── image_tasks.py    # The recipes (code) the Chef cooks
+│   │   └── image_tasks.py    # Background tasks & cache invalidation logic
 │   ├── core
 │   │   └── db.py             # Database connection logic
 │   ├── crud
 │   │   └── crud_items.py     # Functions to Create, Read, Update data
 │   ├── models
-│   │   └── schemas.py        # Defines what our data looks like (Validation)
+│   │   └── schemas.py        # Data models for Test Cases
 │   ├── routers
-│   │   └── items.py          # The Waiter (API Endpoints)
+│   │   └── items.py          # API Endpoints (Creation, PDF Upload, Cached GET)
 │   ├── utils
-│   │   └── mock_redis.py     # Our local caching tool
+│   │   ├── pdf_handler.py    # PDF Extraction & Heuristic Classification
+│   │   ├── cache_manager.py  # Centralized logic for caching Items
+│   │   └── mock_redis.py     # Local file-based caching tool
 │   └── main.py               # The entry point that starts the app
-├── requirements.txt          # List of Python ingredients needed
+├── requirements.txt          # Project dependencies (includes pypdf)
 ├── verify_cache.py           # A script to test if everything is working
-└── local_cache.json          # File where cache data is stored
+└── local_cache.json          # Persistent file for cache storage
 ```
 
-## 🛠️ How to Run (Step-by-Step)
+## 🛠️ How to Run
 
-You will need **two separate terminal windows** open.
+1.  **Install Dependencies**: `pip install -r requirements.txt`
+2.  **Start Celery Worker**: `celery -A app.Celery.Celery_worker.celery worker --loglevel=info -P solo`
+3.  **Start FastAPI**: `uvicorn app.main:app --reload`
 
-### 1. Install Ingredients (Dependencies)
+## 🧪 Testing the New Workflow
 
-First, make sure you have all the necessary Python libraries installed.
+### 1. PDF Upload & Auto-Classification
 
-```bash
-pip install -r requirements.txt
-```
+1.  Go to `/docs`.
+2.  Use the `POST /items/upload-pdf` endpoint.
+3.  Upload a PDF containing text like: `{"title": "Check Login", "steps": ["Open page", "Enter user"]}`.
+4.  The system will extract the block, classify it as **positive**, and return the saved item with a new ID.
 
-### 2. Start the Background Chef (Celery Worker)
+### 2. Verified Caching Flow
 
-In your **first terminal**, run this command. This wakes up the chef who will listen for new cooking orders.
-
-```bash
-celery -A app.Celery.Celery_worker.celery worker --loglevel=info -P solo
-```
-
-_Note: We use `-P solo` which works best on Windows._
-
-### 3. Start the Waiter (FastAPI Server)
-
-In your **second terminal**, run this command. This opens the restaurant doors.
-
-```bash
-uvicorn app.main:app --reload
-```
-
-The app is now running at `http://127.0.0.1:8000`.
-
-## 🧪 How to Test
-
-### Using the Interactive UI (Swagger)
-
-Go to **[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)** in your browser. This is a magical page that lets you press buttons to send requests without writing code.
-
-#### 1. Test the Cache Flow
-
-1.  **Check Cache (`GET /items/cache/{key}`)**: Type a key like `demo`. It will say **MISS** because it's new.
-2.  **Order Computation (`POST /items/cache/compute/{key}`)**: Type the same key `demo` and a value `MyResult`. This sends the order to the Chef (Celery).
-3.  **Wait**: Count to 5 seconds.
-4.  **Check Cache Again**: usage `GET /cache/demo` again. Now it will say **HIT** and show `MyResult`!
-
-### Using the Script
-
-We also made a script that does all the above automatically:
-
-```bash
-python verify_cache.py
-```
+1.  **Get Item by ID (`GET /items/{id}`)**: Use the ID from the previous step.
+2.  **Observe Logs**:
+    - The first time, your terminal will show `Cache MISS` (if not already seeded).
+    - The second time, it will show `Cache HIT`, and the response will be significantly faster.
+3.  **Automatic Invalidation**: If you upload an image, the background worker will update the item and automatically clear the cache, ensuring the next `GET` request shows the latest data.
 
 ## 📝 API Endpoints Summary
 
-### Items (Test Cases)
+### Test Items
 
-- `POST /items/`: Create a new Item (Test Case).
-  - **Fields**: `title`, `description`, `type` (positive/negative), `expected_result`, `steps` (JSON list), and an optional `image`.
+- `POST /items/`: Create a single test case manually (with optional image).
+- `POST /items/upload-pdf`: Bulk import test cases from a PDF file.
+- `GET /items/{item_id}`: Retrieve a test case (Uses **Smart Cache**).
 
-### Caching
+### Legacy/Internal (Optional)
 
-- `GET /items/cache/{key}`: Check if a value exists in our short-term memory.
-- `POST /items/cache/compute/{key}`: Ask the background worker to compute and save a value.
+- `GET /items/cache/{key}`: Direct access to raw cache keys.
+- `POST /items/cache/compute/{key}`: Trigger a manual background computation task.

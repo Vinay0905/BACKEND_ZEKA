@@ -1,27 +1,26 @@
-# Environment variables
-.env
-/.env
-
-# Python artifacts
+# Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-build/
-dist/
-*.egg-info/
-*.spec
-
-# Virtual environments
-.venv/
+*.py[cod]
+*$py.class
 venv/
-env/
-ENV/
+.env
 
-# IDE / Editor specific
-.vscode/
-.idea/
-*.sublime-project
-*.sublime-workspace
-.dockerignore
-own_documentation.txt
+# Local Cache
+local_cache.json
+*.json
+!tests.json
+!Backend/imp.json
+
+# Celery
+.celery/
+Backend/.celery/
+celerybeat-schedule
+celerybeat.pid
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backend specific
+Backend/local_cache.json
+Backend/control/
